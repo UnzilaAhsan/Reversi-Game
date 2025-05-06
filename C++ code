@@ -1,0 +1,541 @@
+#include <iostream>
+#include <fstream>
+using namespace std;
+void Head();
+void Head1();
+void Head2();
+void Initialize(char Board[8][8]);
+void Board(char Board[8][8]);
+void HumanVsHumanGameLoop(char Board[8][8], char& player);
+void HumanVsAIGameLoop(char Board[8][8], char& player);
+void Turn(char Board[8][8], char& player, bool isAI);
+void ChangePlayer(char& player);
+bool IsFilled(char Board[8][8]);
+bool ValidMove(char num);
+void AITurn(char Board[8][8], char& player);
+void CheckUp(char Board[8][8], int row, int col, char& player);
+void CheckDown(char Board[8][8], int row, int col, char& player);
+void CheckRight(char Board[8][8], int row, int col, char& player);
+void CheckLeft(char M[8][8], int row, int col, char& player);
+void CheckDiagonalDownRight(char Board[8][8], int row, int col, char& player);
+void CheckDiagonalDownLeft(char Board[8][8], int row, int col, char& player);
+void CheckDiagonalUpRight(char Board[8][8], int row, int col, char& player);
+void CheckDiagonalUpLeft(char Board[8][8], int row, int col, char& player);
+void CheckWinner(char Board[8][8], bool isAI);
+int calculateMaxFlips(char Board[8][8], int row, int col, char& player);
+int main()
+{
+	int choice;
+	Head();
+	do {
+		cout << "Reversi" << endl;
+		cout << "1. Human vs Human" << endl;
+		cout << "2. Human vs AI" << endl;
+		cout << "0. Exit" << endl;
+		cout << "Enter your choice: ";
+		cin >> choice;
+		char board[8][8];
+		char player = 'O';
+		Initialize(board);
+		switch (choice)
+		{
+		case 1:
+		{
+			Head1();
+			HumanVsHumanGameLoop(board, player);
+			break;
+		}
+		case 2:
+		{
+			Head2();
+			HumanVsAIGameLoop(board, player);
+			break;
+		}
+		case 0:
+		{
+			cout << "Bye!" << endl;
+			break;
+		}
+		default:
+		{
+			cout << "Invalid choice! Please try again." << endl;
+			break;
+		}
+		}
+
+	} while (choice != 0);
+	return 0;
+}
+void Head()
+{
+	cout << " R E V E R S I :" << endl;
+}
+void Head1()
+{
+	cout << "Human vs Human!" << endl;
+	cout << "Player 1 = X :: Player 2 = O" << endl;
+}
+void Head2()
+{
+	cout << "Human vs Computer!" << endl;
+	cout << "Human Player = X :: AI Player = O" << endl;
+}
+void Initialize(char Board[8][8])
+{
+	ifstream file("Board.txt");
+	if (file.is_open())
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			for (int j = 0; j < 8; j++)
+			{
+				file >> Board[i][j];
+			}
+		}
+		file.close();
+	}
+	else
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			for (int j = 0; j < 8; j++)
+			{
+				Board[i][j] = '_';
+			}
+		}
+		Board[3][3] = 'X'; Board[4][4] = 'X';
+		Board[3][4] = 'O'; Board[4][3] = 'O';
+	}
+}
+void Board(char Board[8][8])
+{
+	cout << " 1 2 3 4 5 6 7 8" << endl;
+	for (int i = 0; i < 8; i++)
+	{
+		cout << i + 1 << " ";
+		for (int j = 0; j < 8; j++)
+			cout << Board[i][j] << " ";
+		cout << endl;
+	}
+}
+bool IsFilled(char Board[8][8])
+{
+	for (int i = 0; i < 8; i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			if (Board[i][j] == '_')
+				return false;
+		}
+	}
+	return true;
+}
+bool ValidMove(char num)
+{
+	if (num != '_')
+	{
+		return true;
+	}
+	return false;
+}
+void Turn(char Board[8][8], char& player, bool isAI)
+{
+	int row, col;
+	if (isAI && player == 'O')
+	{
+		AITurn(Board, player);
+		return;
+	}
+	if (isAI && player == 'X')
+		cout << "Player's Turn (X) " << endl;
+	if (!isAI && player == 'X')
+		cout << "Player 2 - X's Turn " << endl;
+	if (player == 'O')
+		cout << "Player 1 - O's Turn " << endl;
+	while (true)
+	{
+		cout << "Enter the row and column (1-8): ";
+		cin >> row >> col;
+		if (row < 1 || row > 8 || col < 1 || col > 8)
+		{
+			cout << "Invalid Entry. Please re-enter" << endl;
+			continue;
+		}
+		row -= 1;
+		col -= 1;
+		if (ValidMove(Board[row][col]))
+		{
+			cout << "The place is taken!" << endl;
+			continue;
+		}
+		Board[row][col] = player;
+		Board[row][col] = player;
+		CheckUp(Board, row, col, player);
+		CheckDown(Board, row, col, player);
+		CheckLeft(Board, row, col, player);
+		CheckRight(Board, row, col, player);
+		CheckDiagonalDownRight(Board, row, col, player);
+		CheckDiagonalDownLeft(Board, row, col, player);
+		CheckDiagonalUpRight(Board, row, col, player);
+		CheckDiagonalUpLeft(Board, row, col, player);
+		break;
+	}
+}
+int calculateMaxFlips(char M[8][8], int row, int col, char& player)
+{
+	int maxFlips = 0;
+	char opponent = 'X';
+	int directions[8][2] = {
+	{-1, 0}, {1, 0}, {0, -1}, {0, 1},
+	{-1, -1}, {-1, 1}, {1, -1}, {1, 1} };
+	for (int i = 0; i < 8; i++)
+	{
+		int r = row + directions[i][0];
+		int c = col + directions[i][1];
+		int tempCount = 0;
+		while (r >= 0 && r < 8 && c >= 0 && c < 8)
+		{
+			if (M[r][c] == opponent)
+			{
+				tempCount++;
+			}
+			else if (M[r][c] == player)
+			{
+				maxFlips = max(maxFlips, tempCount);
+				break;
+			}
+			else
+			{
+				break;
+			}
+			r += directions[i][0];
+			c += directions[i][1];
+		}
+	}
+	return maxFlips;
+}
+void ChangePlayer(char& player)
+{
+	if (player == 'X')
+	{
+		player = 'O';
+		return;
+	}
+	else
+	{
+		player = 'X';
+		return;
+	}
+}
+void HumanVsHumanGameLoop(char M[8][8], char& player)
+{
+	while (!IsFilled(M))
+	{
+		Board(M);
+		Turn(M, player, false);
+		ChangePlayer(player);
+	}
+	CheckWinner(M, false);
+}
+void HumanVsAIGameLoop(char M[8][8], char& player)
+{
+	while (!IsFilled(M))
+	{
+		Board(M);
+		Turn(M, player, true);
+		ChangePlayer(player);
+	}
+	CheckWinner(M, true);
+}
+void CheckWinner(char M[8][8], bool isAI)
+{
+	int xCount = 0, oCount = 0;
+	for (int i = 0; i < 8; i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			if (M[i][j] == 'X')
+				xCount++;
+			else if (M[i][j] == 'O')
+				oCount++;
+		}
+	}
+	Board(M);
+	cout << "Final Scores:" << endl;
+	cout << "Player X: " << xCount << endl;
+	if (isAI)
+	{
+		cout << "AI: " << oCount << endl;
+	}
+	else
+	{
+		cout << "Player O: " << oCount << endl;
+	}
+	if (xCount > oCount)
+	{
+		if (isAI)
+		{
+			cout << "You Won !!" << endl;
+		}
+		else
+		{
+			cout << "Player 1 won !!" << endl;
+		}
+	}
+	else if (xCount < oCount)
+	{
+		if (isAI)
+		{
+			cout << "You Lose. Better luck next time! " << endl;
+		}
+		else
+		{
+			cout << "Player 2 won !!" << endl;
+		}
+	}
+	else
+		cout << "Match is a Draw!" << endl;
+}
+void CheckUp(char M[8][8], int row, int col, char& player)
+{
+	int r = row - 1;
+	while (r >= 0)
+	{
+		if (M[r][col] == '_')
+		{
+			return;
+		}
+		else if (M[r][col] != player)
+		{
+			r--;
+		}
+		else if (M[r][col] == player)
+		{
+			for (int i = row - 1; i > r; i--)
+			{
+				M[i][col] = player;
+			}
+			return;
+		}
+	}
+}
+void CheckDown(char M[8][8], int row, int col, char& player)
+{
+	int r = row + 1;
+	while (r <= 8)
+	{
+		if (M[r][col] == '_')
+		{
+			return;
+		}
+		else if (M[r][col] != player)
+		{
+			r++;
+		}
+		else if (M[r][col] == player)
+		{
+			for (int i = row + 1; i < r; i++)
+			{
+				M[i][col] = player;
+			}
+			return;
+		}
+	}
+}
+void CheckRight(char M[8][8], int row, int col, char& player)
+{
+	int c = col + 1;
+	while (c <= 8)
+	{
+		if (M[row][c] == '_')
+		{
+			return;
+		}
+		else if (M[row][c] != player)
+		{
+			c++;
+		}
+		else if (M[row][c] == player)
+		{
+			for (int i = col + 1; i < c; i++)
+			{
+				M[row][i] = player;
+			}
+			return;
+		}
+	}
+}
+void CheckLeft(char M[8][8], int row, int col, char& player)
+{
+	int c = col - 1;
+	while (c >= 0)
+	{
+		if (M[row][c] == '_')
+		{
+			return;
+		}
+		else if (M[row][c] != player)
+		{
+			c--;
+		}
+		else if (M[row][c] == player)
+		{
+			for (int i = col - 1; i > c; i--)
+			{
+				M[row][i] = player;
+			}
+			return;
+		}
+	}
+}
+void CheckDiagonalDownRight(char M[8][8], int row, int col, char& player)
+{
+	int r = row + 1;
+	int c = col + 1;
+	while (r < 8 && c < 8)
+	{
+		if (M[r][c] == '_')
+		{
+			return;
+		}
+		else if (M[r][c] != player)
+		{
+			r++;
+			c++;
+		}
+		else if (M[r][c] == player)
+		{
+			for (int i = row + 1, j = col + 1; i < r && j < c; i++, j++)
+			{
+				M[i][j] = player;
+			}
+			return;
+		}
+	}
+}
+void CheckDiagonalDownLeft(char M[8][8], int row, int col, char& player)
+{
+	int r = row + 1;
+	int c = col - 1;
+	while (r < 8 && c >= 0)
+	{
+		if (M[r][c] == '_')
+		{
+			return;
+		}
+		else if (M[r][c] != player)
+		{
+			r++;
+			c--;
+		}
+		else if (M[r][c] == player)
+		{
+			for (int i = row + 1, j = col - 1; i < r && j > c; i++, j--)
+			{
+				M[i][j] = player;
+			}
+			return;
+		}
+	}
+}
+void CheckDiagonalUpRight(char M[8][8], int row, int col, char& player)
+{
+	int r = row - 1;
+	int c = col + 1;
+	while (r >= 0 && c < 8)
+	{
+		if (M[r][c] == '_')
+		{
+			return;
+		}
+		else if (M[r][c] != player)
+		{
+			r--;
+			c++;
+		}
+		else if (M[r][c] == player)
+		{
+			for (int i = row - 1, j = col + 1; i > r && j < c; i--, j++)
+			{
+				M[i][j] = player;
+			}
+			return;
+		}
+	}
+}
+void CheckDiagonalUpLeft(char M[8][8], int row, int col, char& player)
+{
+	int r = row - 1;
+	int c = col - 1;
+	while (r >= 0 && c >= 0)
+	{
+		if (M[r][c] == '_')
+		{
+			return;
+		}
+		else if (M[r][c] != player)
+		{
+			r--;
+			c--;
+		}
+		else if (M[r][c] == player)
+		{
+			for (int i = row - 1, j = col - 1; i > r && j > c; i--, j--)
+			{
+				M[i][j] = player;
+			}
+			return;
+		}
+	}
+}
+void AITurn(char M[8][8], char& player)
+{
+	cout << endl << "AI's Turn (O) " << endl;
+	int bestRow = 0, bestCol = 0, maxFlips = 0;
+	for (int i = 0; i < 8; i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			if (M[i][j] == '_')
+			{
+				int flips = calculateMaxFlips(M, i, j, player);
+				if (flips > maxFlips)
+				{
+					maxFlips = flips;
+					bestRow = i;
+					bestCol = j;
+				}
+			}
+		}
+	}
+	if (bestRow != 0 && bestCol != 0)
+	{
+		cout << "AI placed at (" << bestRow + 1 << ", " << bestCol + 1 << ")" <<
+			endl << endl;
+		M[bestRow][bestCol] = player;
+		CheckUp(M, bestRow, bestCol, player);
+		CheckDown(M, bestRow, bestCol, player);
+		CheckLeft(M, bestRow, bestCol, player);
+		CheckRight(M, bestRow, bestCol, player);
+		CheckDiagonalDownRight(M, bestRow, bestCol, player);
+		CheckDiagonalDownLeft(M, bestRow, bestCol, player);
+		CheckDiagonalUpRight(M, bestRow, bestCol, player);
+		CheckDiagonalUpLeft(M, bestRow, bestCol, player);
+	}
+	else
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			for (int j = 0; j < 8; j++)
+			{
+				if (M[i][j] == '_')
+				{
+					cout << "AI placed at (" << i + 1 << ", " << j + 1 << ")" <<
+						endl << endl;
+					M[i][j] = 'O';
+					return;
+				}
+			}
+		}
+	}
+}
